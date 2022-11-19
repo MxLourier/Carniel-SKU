@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>SkuGen</title>
+    <script src="index.js" defer>
+    </script>
+  </head>
+  <body>
+
+    <div class="input">
+      <label for="main-family">משפחה ראשית</label>
+      <select name="main-family" id="main-family">
+        <!-- do I need the 'name' attribute? -->
+        <option value="default">--select--</option>
+      </select>
+      <br>
+      <label for="sub-family">תת משפחה</label>
+      <select id="sub-family">
+        <option value="default">--select--</option>
+      </select>
+      <br>
+      <label for="group">קבוצה</label>
+      <select id="group">
+        <option value="default">--select--</option>
+      </select>
+      <br>
+      <label for="category">קטגוריה</label>
+      <select id="category">
+        <option value="default">--select--</option>
+      </select>
+
+    </div>
+    <hr>
+    <div class="output">
+      <label for="sku">מק"ט</label>
+      <input type="text" name="sku" id="sku" value="">
+      <br>
+      <label for="instruction">הנחייה</label>
+      <p id="instruction"></p>
+      <br>
+      <label for="example">דוגמא</label>
+      <p id="example"></p>
+    </div>
+
+  </body>
+</html>
