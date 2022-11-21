@@ -1,5 +1,5 @@
 class Item {
-  constructor(parent_code, level, category_code, category_name, sku, instruction, example){
+  constructor(parent_code, level, category_code, category_name, sku, instruction, example) {
     this.parent_code = parent_code;
     this.level = level;
     this.category_code = category_code;
@@ -45,7 +45,7 @@ const contentTable = [
   new Item(1121, 4, 11212, 'apple', 'APPL'),
   new Item(1121, 4, 11213, 'peach', 'PECH'),
   new Item(1121, 4, 11214, 'orange', 'ORNG', 'orange instruction', 'orange example'),
-  new Item (1122, 4, 11221, 'rosemary', 'RMRY'),
+  new Item(1122, 4, 11221, 'rosemary', 'RMRY'),
   new Item(1122, 4, 11222, 'thime', 'THME'),
   //Solids
   new Item(1211, 4, 12111, 'silver', 'SLVR'),
@@ -64,98 +64,90 @@ const contentTable = [
   new Item(1232, 4, 1232, 'fossil gas', 'FOSG'),
 ];
 
-
-
-
-// input fields
-const mainFamilyField = document.getElementById('main-family');
-const subFamilyField = document.getElementById('sub-family');
-const groupField = document.getElementById('group');
-const categoryField = document.getElementById('category');
-
 // output fields
 const skuField = document.getElementById('sku');
 const instructionField = document.getElementById('instruction');
 const exampleField = document.getElementById('example');
 
+// Data pieces that will later form the "מק"ט" output field
+// These are the sku values of the second level choice and forth level choice
+// Empty initially
 const skuData = {
   sku2: '',
   sku4: ''
 }
 
+
+// Resets field to only have one option - "--select--"
 function clearOptions(field) {
-  field.innerHTML = '<option>--select--</option>';
+  field.options.length = 1;
   showOutput('', '', '');
 }
 
+// find all children of "chosenParent" item and add them as options to childField
 function addOptions(chosenParent, childField) {
-    clearOptions(childField);
-    const childOptions = contentTable.filter((item) => item.parent_code===chosenParent);
-    for(const childOption of childOptions){
-      const newOption = document.createElement('option');
-      newOption.innerText = childOption.category_name;
-      childField.appendChild(newOption);
-    }
+  clearOptions(childField);
+  const childOptions = contentTable.filter((item) => item.parent_code === chosenParent);
+  for (const childOption of childOptions) {
+    const newOption = document.createElement('option');
+    newOption.innerText = childOption.category_name;
+    childField.appendChild(newOption);
   }
+}
 
-  function showOutput(sku, instruction, example){
-    skuField.value = sku;
-    instructionField.innerText = instruction;
-    exampleField.innerText = example;
-  };
+// Show a certain result in the ".output" area
+function showOutput(sku, instruction, example) {
+  skuField.value = sku;
+  instructionField.innerText = instruction;
+  exampleField.innerText = example;
+};
 
-addOptions(0, mainFamilyField);
-//showOutput('example sku', 'dummy instruction', 'example text');
+// Start by showing all options in the "משפחה ראשית" field
+addOptions(0, document.getElementById('main-family'));
 
-mainFamilyField.addEventListener('change', (event) => {
+// Function triggered whenever one of the input fields changes
+// 1. Clear all fields that are two levels lower
+// e.g. whenever level 1 changes levels 3 and 4 are cleared
+// 2. If "--select--" is chosen - clear child field as well and return
+// 3. Populate child field according to the option selected in the parent fields
+// 4. For level 2 only: save the sku value of the chosen option
+function onChangeHandler(event) {
+  const dependentField = document.getElementById(this.getAttribute('data-dependent-id'));
   const chosenName = event.target.value;
-  clearOptions(groupField);
-  clearOptions(categoryField);
+  let fieldToClear = document.getElementById(dependentField.getAttribute('data-dependent-id'));
+  while (fieldToClear) {
+    console.log('run clear!');
+    clearOptions(fieldToClear);
+    fieldToClear = document.getElementById(fieldToClear.getAttribute('data-dependent-id'));
+  }
   if(chosenName==='--select--'){
-    clearOptions(subFamilyField);
+    clearOptions(dependentField);
     return;
   }
   console.log(chosenName);
   const chosenItem = contentTable.find(item => item.category_name===chosenName);
   console.log(chosenItem.category_code);
-  addOptions(chosenItem.category_code, subFamilyField);
-});
-
-subFamilyField.addEventListener('change', (event) => {
-  const chosenName = event.target.value;
-  clearOptions(categoryField);
-  if(chosenName==='--select--'){
-    clearOptions(groupField);
-    return;
+  addOptions(chosenItem.category_code, dependentField);
+  if(this.getAttribute('data-dependent-id')==='group'){
+    console.log('setting sku2!');
+    skuData.sku2 = chosenItem.sku;
   }
-  console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name===chosenName);
-  skuData.sku2 = chosenItem.sku;
-  console.log('sku2 = '+ chosenItem.sku);
-  console.log(chosenItem.category_code);
-  addOptions(chosenItem.category_code, groupField);
+}
+
+// Add onChangeHandler function ONLY for the first three input fields
+document.querySelectorAll('select.firstThree').forEach((field) => {
+  field.addEventListener('change', onChangeHandler);
 });
 
-groupField.addEventListener('change', (event) => {
+// Last input field needs a different onChange handler
+document.getElementById('category').addEventListener('change', event => {
   const chosenName = event.target.value;
-  if(chosenName==='--select--'){
-    clearOptions(categoryField);
-    return;
-  }
-  console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name===chosenName);
-  console.log(chosenItem.category_code);
-  addOptions(chosenItem.category_code, categoryField);
-});
-
-categoryField.addEventListener('change', event => {
-  const chosenName = event.target.value;
-  if(chosenName==='--select--'){
+  if (chosenName === '--select--') {
     showOutput('', '', '');
     return;
   }
   console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name===chosenName);
+  const chosenItem = contentTable.find(item => item.category_name === chosenName);
   skuData.sku4 = chosenItem.sku;
   console.log('sku4 = ' + skuData.sku4);
   console.log(chosenItem.category_code);

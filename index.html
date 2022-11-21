@@ -10,18 +10,17 @@
 
     <div class="input">
       <label for="main-family">משפחה ראשית</label>
-      <select name="main-family" id="main-family">
-        <!-- do I need the 'name' attribute? -->
+      <select id="main-family" data-dependent-id="sub-family" class="firstThree">
         <option value="default">--select--</option>
       </select>
       <br>
       <label for="sub-family">תת משפחה</label>
-      <select id="sub-family">
+      <select id="sub-family" data-dependent-id="group"  class="firstThree" >
         <option value="default">--select--</option>
       </select>
       <br>
       <label for="group">קבוצה</label>
-      <select id="group">
+      <select id="group" data-dependent-id ="category"  class="firstThree">
         <option value="default">--select--</option>
       </select>
       <br>
