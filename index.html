@@ -5,30 +5,30 @@
     <title>SkuGen</title>
     <script src="index.js" defer>
     </script>
+    </script>
   </head>
   <body>
 
     <div class="input">
       <label for="main-family">משפחה ראשית</label>
-      <select name="main-family" id="main-family">
-        <!-- do I need the 'name' attribute? -->
+      <select id="main-family" data-dependent-id="sub-family">
         <option value="default">--select--</option>
       </select>
       <br>
       <label for="sub-family">תת משפחה</label>
-      <select id="sub-family">
+      <select id="sub-family" data-dependent-id="group">
         <option value="default">--select--</option>
       </select>
       <br>
       <label for="group">קבוצה</label>
-      <select id="group">
+      <select id="group" data-dependent-id ="category">
         <option value="default">--select--</option>
       </select>
       <br>
-      <label for="category">קטגוריה</label>
+      <!-- <label for="category">קטגוריה</label>
       <select id="category">
         <option value="default">--select--</option>
-      </select>
+      </select> -->
 
     </div>
     <hr>

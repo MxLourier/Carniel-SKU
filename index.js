@@ -1,7 +1,169 @@
+//i. Function definitions
+
+// Resets field to only have one option - "--select--"
+function clearOptions(field) {
+  field.options.length = 1;
+  clearOutput();
+}
+
+// find all children of "chosenParent" item and add them as options to childField
+function addOptions(chosenParent, childField) {
+  clearOptions(childField);
+  const childOptions = contentTable.filter((item) => item.parent_code === chosenParent);
+  for (const childOption of childOptions) {
+    const newOption = new Option(childOption.category_name, childOption.category_code);
+    childField.options.add(newOption);
+  }
+}
+
+// Show a certain result in the ".output" area
+function showOutput(instruction, example) {
+  skuField.value = `${skuData.sku1}-${skuData.sku2}-XXXXXXXX-000`;
+  instructionField.innerText = instruction ? instruction : '';
+  exampleField.innerText = example ? example : '';
+};
+
+function clearOutput() {
+  skuField.value = ``;
+  instructionField.innerText = '';
+  exampleField.innerText = '';
+}
+
+// Function triggered whenever one of the first two/three input fields changes
+// 1. Clear all fields that are two levels lower
+// e.g. whenever level 1 changes levels 3 and 4 are cleared
+// 2. If "--select--" is chosen - clear child field as well and return
+// 3. Populate child field according to the option selected in the parent field
+function onChangeHandler(event) {
+  if(this.getAttribute('id')!=='group'){
+    hideCategoryField();
+  }
+  const dependentField = document.getElementById(this.getAttribute('data-dependent-id'));
+  const chosenName = event.target.value;
+  let fieldToClear = document.getElementById(dependentField.getAttribute('data-dependent-id'));
+  while (fieldToClear) {
+    clearOptions(fieldToClear);
+    fieldToClear = document.getElementById(fieldToClear.getAttribute('data-dependent-id'));
+  }
+  if(chosenName==='--select--'){
+    clearOptions(dependentField);
+    return;
+  }
+  const chosenItem = contentTable.find(item => item.category_code===chosenName);
+  addOptions(chosenItem.category_code, dependentField);
+
+}
+
+function showCategoryField() {
+  const categoryLabel = document.createElement('label');
+  const categoryField = document.createElement('select');
+  const defaultOption = new Option('--select--');
+
+  categoryLabel.setAttribute('for', 'category');
+  categoryLabel.setAttribute('id', 'category-label');
+  categoryLabel.innerText = 'קטגוריה';
+
+  categoryField.setAttribute('id', 'category');
+  categoryField.appendChild(defaultOption);
+
+  const inputDiv = document.querySelector('.input');
+  inputDiv.appendChild(categoryLabel);
+  inputDiv.appendChild(categoryField);
+
+  categoryField.addEventListener('change', event => {
+    const chosenName = event.target.value;
+    if (chosenName === '--select--') {
+      clearOutput();
+      return;
+    }
+    const chosenItem = contentTable.find(item => item.category_code === chosenName);
+    skuData.sku2 = chosenItem.sku;
+    showOutput(chosenItem.instruction, chosenItem.example);
+  });
+}
+
+function hideCategoryField() {
+  const inputDiv = document.querySelector('.input');
+  const categoryLabel = document.getElementById('category-label');
+  const categoryField = document.getElementById('category');
+  if(!categoryLabel || !categoryField) {
+    return;
+  }
+  inputDiv.removeChild(categoryLabel);
+  inputDiv.removeChild(categoryField);
+}
+
+
+// ii. function executions
+
+// input fields
+const mainFamilyField = document.getElementById('main-family');
+const subFamilyField = document.getElementById('sub-family');
+const groupField = document.getElementById('group');
+
+// output fields
+const skuField = document.getElementById('sku');
+const instructionField = document.getElementById('instruction');
+const exampleField = document.getElementById('example');
+
+// Data pieces that will later form the "מק"ט" output field
+// These are the sku values of the second level choice and forth level choice
+// Empty initially
+const skuData = {
+  sku1: '',
+  sku2: ''
+}
+
+// Variable that shows whether the current 3 level choice has children
+// This will be used in the sku section
+let fourthElementExists = true;
+
+// Change handler specific for 'group' fields
+// If the chosen third level item has children => show fourth field
+// If the chosen third level item has no children => go on to form output (not done yet)
+function onChangeHandlerGroup(event) {
+  hideCategoryField();
+  const chosenItem = contentTable.find(item => item.category_code===event.target.value);
+  const children = contentTable.find(item => item.parent_code===chosenItem.category_code);
+  if(children) {
+    showCategoryField();
+    const bindedChangeHandler = onChangeHandler.bind(this);
+    bindedChangeHandler(event);
+    fourthElementExists = true;
+  } else {
+    fourthElementExists = false;
+  }
+}
+
+mainFamilyField.addEventListener('change', onChangeHandler);
+subFamilyField.addEventListener('change', onChangeHandler);
+groupField.addEventListener('change', onChangeHandlerGroup);
+
+// sku logic
+
+// sku1: always determined by level 2 category
+subFamilyField.addEventListener('change', event => {
+  const chosenItem = contentTable.find(item => item.category_code===event.target.value);
+  skuData.sku1 = chosenItem.sku;
+});
+
+// sku2: determined by level 3 category, overwridden by level 4 item if it exists
+// Logic for level 4 sku is inside showCategoryField function
+groupField.addEventListener('change', event => {
+  const chosenItem = contentTable.find(item => item.category_code===event.target.value);
+  skuData.sku2 = chosenItem.sku;
+  if(!fourthElementExists){
+    showOutput(chosenItem.instruction, chosenItem.example);
+  }
+});
+
+
+// Fetch data table
+const url = 'https://cpq.binet.co.il/api/cpq/sku/all';
+
 class Item {
-  constructor(parent_code, level, category_code, category_name, sku, instruction, example){
+  constructor(parent_code, category_code, category_name, sku, instruction, example) {
     this.parent_code = parent_code;
-    this.level = level;
     this.category_code = category_code;
     this.category_name = category_name;
     this.sku = sku;
@@ -10,155 +172,33 @@ class Item {
   }
 }
 
+let contentTable = [];
 
-// sample input
-const contentTable = [
-  //level 1
-  new Item(0, 1, 11, 'live'),
-  new Item(0, 1, 12, 'inanimate'),
-  // level 2
-  new Item(11, 2, 111, 'animals', 'ANML'),
-  new Item(11, 2, 112, 'plants', 'PLTS'),
-  new Item(12, 2, 121, 'solid', 'SLID'),
-  new Item(12, 2, 122, 'liquid', 'LQID'),
-  new Item(12, 2, 123, 'gas', 'GAS'),
-  // level 3
-  new Item(111, 3, 1111, 'carnivore'),
-  new Item(111, 3, 1112, 'herbivore'),
-  new Item(112, 3, 1121, 'trees'),
-  new Item(112, 3, 1122, 'bushes'),
-  new Item(121, 3, 1211, 'metals'),
-  new Item(121, 3, 1212, 'non-metals'),
-  new Item(122, 3, 1221, 'drinkable'),
-  new Item(122, 3, 1222, 'toxic'),
-  new Item(123, 3, 1231, 'air'),
-  new Item(123, 3, 1232, 'fire'),
-  // level 4
-  //Animals
-  new Item(1111, 4, 11111, 'cat', 'CAT', 'cat instruction', 'cat example'),
-  new Item(1111, 4, 11112, 'dog', 'DOG'),
-  new Item(1112, 4, 11121, 'alpaca', 'ALPC'),
-  new Item(1112, 4, 11122, 'sheep', 'SHEP'),
-  new Item(1112, 4, 11123, 'camel', 'CAML'),
-  //plants
-  new Item(1121, 4, 11211, 'pine', 'PINE'),
-  new Item(1121, 4, 11212, 'apple', 'APPL'),
-  new Item(1121, 4, 11213, 'peach', 'PECH'),
-  new Item(1121, 4, 11214, 'orange', 'ORNG', 'orange instruction', 'orange example'),
-  new Item (1122, 4, 11221, 'rosemary', 'RMRY'),
-  new Item(1122, 4, 11222, 'thime', 'THME'),
-  //Solids
-  new Item(1211, 4, 12111, 'silver', 'SLVR'),
-  new Item(1211, 4, 12112, 'gold', 'GOLD'),
-  new Item(1212, 4, 12121, 'wood', 'WOOD'),
-  new Item(1212, 4, 12122, 'rubber', 'RBBR'),
-  new Item(1212, 4, 12123, 'wax', 'WAX'),
-  // Liquids
-  new Item(1221, 4, 12211, 'water', 'WATR'),
-  new Item(1221, 4, 12212, 'alcohol', 'ALCO'),
-  new Item(1221, 4, 12213, 'oil', 'OIL'),
-  new Item(1222, 4, 12221, 'methanol', 'MTHL'),
-  // Gases
-  new Item(1231, 4, 12311, 'Oxygen', 'OXGN'),
-  new Item(1231, 4, 12312, 'Nitrogen', 'NRGN'),
-  new Item(1232, 4, 1232, 'fossil gas', 'FOSG'),
-];
-
-
-
-
-// input fields
-const mainFamilyField = document.getElementById('main-family');
-const subFamilyField = document.getElementById('sub-family');
-const groupField = document.getElementById('group');
-const categoryField = document.getElementById('category');
-
-// output fields
-const skuField = document.getElementById('sku');
-const instructionField = document.getElementById('instruction');
-const exampleField = document.getElementById('example');
-
-const skuData = {
-  sku2: '',
-  sku4: ''
-}
-
-function clearOptions(field) {
-  field.innerHTML = '<option>--select--</option>';
-  showOutput('', '', '');
-}
-
-function addOptions(chosenParent, childField) {
-    clearOptions(childField);
-    const childOptions = contentTable.filter((item) => item.parent_code===chosenParent);
-    for(const childOption of childOptions){
-      const newOption = document.createElement('option');
-      newOption.innerText = childOption.category_name;
-      childField.appendChild(newOption);
+function flattenArray(array) {
+  for (let i = 0; i < array.length; i++) {
+    contentTable.push(array[i]);
+    if(array[i].children){
+      flattenArray(array[i].children);
     }
   }
+}
 
-  function showOutput(sku, instruction, example){
-    skuField.value = sku;
-    instructionField.innerText = instruction;
-    exampleField.innerText = example;
-  };
-
-addOptions(0, mainFamilyField);
-//showOutput('example sku', 'dummy instruction', 'example text');
-
-mainFamilyField.addEventListener('change', (event) => {
-  const chosenName = event.target.value;
-  clearOptions(groupField);
-  clearOptions(categoryField);
-  if(chosenName==='--select--'){
-    clearOptions(subFamilyField);
-    return;
+function convertArray(array) {
+  const result = [];
+  for(const element of array){
+    const item = new Item(element.parent, element.id, element.label, element.sku, element.instruction, element.example);
+    result.push(item);
   }
-  console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name===chosenName);
-  console.log(chosenItem.category_code);
-  addOptions(chosenItem.category_code, subFamilyField);
-});
+  return result;
+}
 
-subFamilyField.addEventListener('change', (event) => {
-  const chosenName = event.target.value;
-  clearOptions(categoryField);
-  if(chosenName==='--select--'){
-    clearOptions(groupField);
-    return;
-  }
-  console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name===chosenName);
-  skuData.sku2 = chosenItem.sku;
-  console.log('sku2 = '+ chosenItem.sku);
-  console.log(chosenItem.category_code);
-  addOptions(chosenItem.category_code, groupField);
-});
+let promise = fetch(url);
 
-groupField.addEventListener('change', (event) => {
-  const chosenName = event.target.value;
-  if(chosenName==='--select--'){
-    clearOptions(categoryField);
-    return;
-  }
-  console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name===chosenName);
-  console.log(chosenItem.category_code);
-  addOptions(chosenItem.category_code, categoryField);
-});
-
-categoryField.addEventListener('change', event => {
-  const chosenName = event.target.value;
-  if(chosenName==='--select--'){
-    showOutput('', '', '');
-    return;
-  }
-  console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name===chosenName);
-  skuData.sku4 = chosenItem.sku;
-  console.log('sku4 = ' + skuData.sku4);
-  console.log(chosenItem.category_code);
-  const skuOutput = `${skuData.sku2}-${skuData.sku4}-XXXXXXXX-000`;
-  showOutput(skuOutput, chosenItem.instruction, chosenItem.example);
+promise.then(data => {
+  return data.json();
+}).then(table => {
+  flattenArray(table);
+  contentTable = convertArray(contentTable);
+  // Start by showing all options in the "משפחה ראשית" field
+  addOptions(0, document.getElementById('main-family'));
 });
