@@ -11,9 +11,8 @@ function addOptions(chosenParent, childField) {
   clearOptions(childField);
   const childOptions = contentTable.filter((item) => item.parent_code === chosenParent);
   for (const childOption of childOptions) {
-    const newOption = document.createElement('option');
-    newOption.innerText = childOption.category_name;
-    childField.appendChild(newOption);
+    const newOption = new Option(childOption.category_name, childOption.category_code);
+    childField.options.add(newOption);
   }
 }
 
@@ -24,18 +23,26 @@ function showOutput(sku, instruction, example) {
   exampleField.innerText = example;
 };
 
-// Function triggered whenever one of the first three input fields changes
+function showFinalResult(chosenItem) {
+  const skuOutput = `${skuData.sku1}-${skuData.sku2}-XXXXXXXX-000`;
+  const instruction = chosenItem.instruction ? chosenItem.instruction : '';
+  const example = chosenItem.example ? chosenItem.example : '';
+  showOutput(skuOutput, instruction, example);
+}
+
+// Function triggered whenever one of the first two/three input fields changes
 // 1. Clear all fields that are two levels lower
 // e.g. whenever level 1 changes levels 3 and 4 are cleared
 // 2. If "--select--" is chosen - clear child field as well and return
 // 3. Populate child field according to the option selected in the parent field
-// 4. For level 2 only: save the sku value of the chosen option
 function onChangeHandler(event) {
+  if(this.getAttribute('id')!=='group'){
+    hideCategoryField();
+  }
   const dependentField = document.getElementById(this.getAttribute('data-dependent-id'));
   const chosenName = event.target.value;
   let fieldToClear = document.getElementById(dependentField.getAttribute('data-dependent-id'));
   while (fieldToClear) {
-    console.log('run clear!');
     clearOptions(fieldToClear);
     fieldToClear = document.getElementById(fieldToClear.getAttribute('data-dependent-id'));
   }
@@ -43,17 +50,58 @@ function onChangeHandler(event) {
     clearOptions(dependentField);
     return;
   }
-  console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name===chosenName);
-  console.log(chosenItem.category_code);
+  const chosenItem = contentTable.find(item => item.category_code===chosenName);
   addOptions(chosenItem.category_code, dependentField);
-  if(this.getAttribute('data-dependent-id')==='group'){
-    console.log('setting sku2!');
-    skuData.sku2 = chosenItem.sku;
-  }
+
 }
 
+function showCategoryField() {
+  const categoryLabel = document.createElement('label');
+  const categoryField = document.createElement('select');
+  const defaultOption = document.createElement('option');
+
+  categoryLabel.setAttribute('for', 'category');
+  categoryLabel.setAttribute('id', 'category-label');
+  categoryLabel.innerText = 'קטגוריה';
+
+  categoryField.setAttribute('id', 'category');
+  defaultOption.innerText = '--select--';
+  categoryField.appendChild(defaultOption);
+
+  const inputDiv = document.querySelector('.input');
+  inputDiv.appendChild(categoryLabel);
+  inputDiv.appendChild(categoryField);
+
+  categoryField.addEventListener('change', event => {
+    const chosenName = event.target.value;
+    if (chosenName === '--select--') {
+      showOutput('', '', '');
+      return;
+    }
+    const chosenItem = contentTable.find(item => item.category_code === chosenName);
+    skuData.sku2 = chosenItem.sku;
+    showFinalResult(chosenItem);
+  });
+}
+
+function hideCategoryField() {
+  const inputDiv = document.querySelector('.input');
+  const categoryLabel = document.getElementById('category-label');
+  const categoryField = document.getElementById('category');
+  if(!categoryLabel || !categoryField) {
+    return;
+  }
+  inputDiv.removeChild(categoryLabel);
+  inputDiv.removeChild(categoryField);
+}
+
+
 // ii. function executions
+
+// input fields
+const mainFamilyField = document.getElementById('main-family');
+const subFamilyField = document.getElementById('sub-family');
+const groupField = document.getElementById('group');
 
 // output fields
 const skuField = document.getElementById('sku');
@@ -64,31 +112,51 @@ const exampleField = document.getElementById('example');
 // These are the sku values of the second level choice and forth level choice
 // Empty initially
 const skuData = {
-  sku2: '',
-  sku4: ''
+  sku1: '',
+  sku2: ''
 }
 
-// Add onChangeHandler function ONLY for the first three input fields
-document.querySelectorAll('select.firstThree').forEach((field) => {
-  field.addEventListener('change', onChangeHandler);
+// Variable that shows whether the current 3 level choice has children
+// This will be used in the sku section
+let fourthElementExists = true;
+
+// Change handler specific for 'group' fields
+// If the chosen third level item has children => show fourth field
+// If the chosen third level item has no children => go on to form output (not done yet)
+function onChangeHandlerGroup(event) {
+  hideCategoryField();
+  const chosenItem = contentTable.find(item => item.category_code===event.target.value);
+  const children = contentTable.find(item => item.parent_code===chosenItem.category_code);
+  if(children) {
+    showCategoryField();
+    const bindedChangeHandler = onChangeHandler.bind(this);
+    bindedChangeHandler(event);
+    fourthElementExists = true;
+  } else {
+    fourthElementExists = false;
+  }
+}
+
+mainFamilyField.addEventListener('change', onChangeHandler);
+subFamilyField.addEventListener('change', onChangeHandler);
+groupField.addEventListener('change', onChangeHandlerGroup);
+
+// sku logic
+
+// sku1: always determined by level 2 category
+subFamilyField.addEventListener('change', event => {
+  const chosenItem = contentTable.find(item => item.category_code===event.target.value);
+  skuData.sku1 = chosenItem.sku;
 });
 
-// Last input field needs a different onChange handler
-document.getElementById('category').addEventListener('change', event => {
-  const chosenName = event.target.value;
-  if (chosenName === '--select--') {
-    showOutput('', '', '');
-    return;
+// sku2: determined by level 3 category, overwridden by level 4 item if it exists
+// Logic for level 4 sku is inside showCategoryField function
+groupField.addEventListener('change', event => {
+  const chosenItem = contentTable.find(item => item.category_code===event.target.value);
+  skuData.sku2 = chosenItem.sku;
+  if(!fourthElementExists){
+    showFinalResult(chosenItem);
   }
-  console.log(chosenName);
-  const chosenItem = contentTable.find(item => item.category_name === chosenName);
-  skuData.sku4 = chosenItem.sku;
-  console.log('sku4 = ' + skuData.sku4);
-  console.log(chosenItem.category_code);
-  const skuOutput = `${skuData.sku2}-${skuData.sku4}-XXXXXXXX-000`;
-  const instruction = chosenItem.instruction ? chosenItem.instruction : '';
-  const example = chosenItem.example ? chosenItem.example : '';
-  showOutput(skuOutput, instruction, example);
 });
 
 
@@ -133,10 +201,6 @@ promise.then(data => {
 }).then(table => {
   flattenArray(table);
   contentTable = convertArray(contentTable);
-  console.log(contentTable);
+  // Start by showing all options in the "משפחה ראשית" field
+  addOptions(0, document.getElementById('main-family'));
 });
-
-
-
-// Start by showing all options in the "משפחה ראשית" field
-addOptions(0, document.getElementById('main-family'));
