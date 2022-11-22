@@ -3,7 +3,7 @@
 // Resets field to only have one option - "--select--"
 function clearOptions(field) {
   field.options.length = 1;
-  showOutput('', '', '');
+  clearOutput();
 }
 
 // find all children of "chosenParent" item and add them as options to childField
@@ -17,17 +17,16 @@ function addOptions(chosenParent, childField) {
 }
 
 // Show a certain result in the ".output" area
-function showOutput(sku, instruction, example) {
-  skuField.value = sku;
-  instructionField.innerText = instruction;
-  exampleField.innerText = example;
+function showOutput(instruction, example) {
+  skuField.value = `${skuData.sku1}-${skuData.sku2}-XXXXXXXX-000`;
+  instructionField.innerText = instruction ? instruction : '';
+  exampleField.innerText = example ? example : '';
 };
 
-function showFinalResult(chosenItem) {
-  const skuOutput = `${skuData.sku1}-${skuData.sku2}-XXXXXXXX-000`;
-  const instruction = chosenItem.instruction ? chosenItem.instruction : '';
-  const example = chosenItem.example ? chosenItem.example : '';
-  showOutput(skuOutput, instruction, example);
+function clearOutput() {
+  skuField.value = ``;
+  instructionField.innerText = '';
+  exampleField.innerText = '';
 }
 
 // Function triggered whenever one of the first two/three input fields changes
@@ -58,14 +57,13 @@ function onChangeHandler(event) {
 function showCategoryField() {
   const categoryLabel = document.createElement('label');
   const categoryField = document.createElement('select');
-  const defaultOption = document.createElement('option');
+  const defaultOption = new Option('--select--');
 
   categoryLabel.setAttribute('for', 'category');
   categoryLabel.setAttribute('id', 'category-label');
   categoryLabel.innerText = 'קטגוריה';
 
   categoryField.setAttribute('id', 'category');
-  defaultOption.innerText = '--select--';
   categoryField.appendChild(defaultOption);
 
   const inputDiv = document.querySelector('.input');
@@ -75,12 +73,12 @@ function showCategoryField() {
   categoryField.addEventListener('change', event => {
     const chosenName = event.target.value;
     if (chosenName === '--select--') {
-      showOutput('', '', '');
+      clearOutput();
       return;
     }
     const chosenItem = contentTable.find(item => item.category_code === chosenName);
     skuData.sku2 = chosenItem.sku;
-    showFinalResult(chosenItem);
+    showOutput(chosenItem.instruction, chosenItem.example);
   });
 }
 
@@ -155,7 +153,7 @@ groupField.addEventListener('change', event => {
   const chosenItem = contentTable.find(item => item.category_code===event.target.value);
   skuData.sku2 = chosenItem.sku;
   if(!fourthElementExists){
-    showFinalResult(chosenItem);
+    showOutput(chosenItem.instruction, chosenItem.example);
   }
 });
 
