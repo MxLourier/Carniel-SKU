@@ -55,42 +55,11 @@ function onChangeHandler(event) {
 }
 
 function showCategoryField() {
-  const categoryLabel = document.createElement('label');
-  const categoryField = document.createElement('select');
-  const defaultOption = new Option('--select--');
-
-  categoryLabel.setAttribute('for', 'category');
-  categoryLabel.setAttribute('id', 'category-label');
-  categoryLabel.innerText = 'קטגוריה';
-
-  categoryField.setAttribute('id', 'category');
-  categoryField.appendChild(defaultOption);
-
-  const inputDiv = document.querySelector('.input');
-  inputDiv.appendChild(categoryLabel);
-  inputDiv.appendChild(categoryField);
-
-  categoryField.addEventListener('change', event => {
-    const chosenName = event.target.value;
-    if (chosenName === '--select--') {
-      clearOutput();
-      return;
-    }
-    const chosenItem = contentTable.find(item => item.category_code === chosenName);
-    skuData.sku2 = chosenItem.sku;
-    showOutput(chosenItem.instruction, chosenItem.example);
-  });
+  document.getElementById('category').closest('div').style.display = '';
 }
 
 function hideCategoryField() {
-  const inputDiv = document.querySelector('.input');
-  const categoryLabel = document.getElementById('category-label');
-  const categoryField = document.getElementById('category');
-  if(!categoryLabel || !categoryField) {
-    return;
-  }
-  inputDiv.removeChild(categoryLabel);
-  inputDiv.removeChild(categoryField);
+  document.getElementById('category').closest('div').style.display = 'none';
 }
 
 
@@ -100,6 +69,7 @@ function hideCategoryField() {
 const mainFamilyField = document.getElementById('main-family');
 const subFamilyField = document.getElementById('sub-family');
 const groupField = document.getElementById('group');
+const categoryField = document.getElementById('category');
 
 // output fields
 const skuField = document.getElementById('sku');
@@ -138,6 +108,18 @@ function onChangeHandlerGroup(event) {
 mainFamilyField.addEventListener('change', onChangeHandler);
 subFamilyField.addEventListener('change', onChangeHandler);
 groupField.addEventListener('change', onChangeHandlerGroup);
+
+categoryField.addEventListener('change', event => {
+  const chosenName = event.target.value;
+  if (chosenName === '--select--') {
+    clearOutput();
+    return;
+  }
+  const chosenItem = contentTable.find(item => item.category_code === chosenName);
+  skuData.sku2 = chosenItem.sku;
+  showOutput(chosenItem.instruction, chosenItem.example);
+});
+
 
 // sku logic
 
