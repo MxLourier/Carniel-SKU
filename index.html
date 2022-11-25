@@ -3,48 +3,57 @@
   <head>
     <meta charset="utf-8">
     <title>SkuGen</title>
-    <script src="index.js" defer>
-    </script>
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+    <script src="index.js" defer></script> 
+    <link rel="stylesheet" href="index.css">
+	
   </head>
   <body>
 
-    <div class="input">
-      <label for="main-family">משפחה ראשית</label>
-      <select id="main-family" data-dependent-id="sub-family">
-        <option value="default">--select--</option>
-      </select>
-      <br>
-      <label for="sub-family">תת משפחה</label>
-      <select id="sub-family" data-dependent-id="group">
-        <option value="default">--select--</option>
-      </select>
-      <br>
-      <label for="group">קבוצה</label>
-      <select id="group" data-dependent-id ="category">
-        <option value="default">--select--</option>
-      </select>
-      <br>
-      <div style="display: none">
-        <label for="category">קטגוריה</label>
-      <select id="category">
-        <option value="default">--select--</option>
-      </select>
+    <div id="left-container">
+      Loading tree...
+    </div>
+
+    <div id="right-container">
+      <div class="input">
+        <label for="main-family">משפחה ראשית</label>
+        <select id="main-family" data-dependent-id="sub-family">
+          <option value="default">--select--</option>
+        </select>
+        <br>
+        <label for="sub-family">תת משפחה</label>
+        <select id="sub-family" data-dependent-id="group">
+          <option value="default">--select--</option>
+        </select>
+        <br>
+        <label for="group">קבוצה</label>
+        <select id="group" data-dependent-id ="category">
+          <option value="default">--select--</option>
+        </select>
+        <br>
+        <div style="display: none">
+          <label for="category">קטגוריה</label>
+        <select id="category">
+          <option value="default">--select--</option>
+        </select>
+        </div>
+        
+  
       </div>
-      
-
-    </div>
-    <hr>
-    <div class="output">
-      <label for="sku">מק"ט</label>
-      <input type="text" name="sku" id="sku" value="">
-      <br>
-      <label for="instruction">הנחייה</label>
-      <p id="instruction"></p>
-      <br>
-      <label for="example">דוגמא</label>
-      <p id="example"></p>
+      <hr>
+      <div class="output">
+        <label for="sku">מק"ט</label>
+        <input type="text" name="sku" id="sku" value="">
+        <br>
+        <label for="instruction">הנחייה</label>
+        <p id="instruction"></p>
+        <br>
+        <label for="example">דוגמא</label>
+        <p id="example"></p>
+      </div>  
     </div>
 
-  </body>
+      </body>
 </html>

@@ -62,6 +62,22 @@ function hideCategoryField() {
   document.getElementById('category').closest('div').style.display = 'none';
 }
 
+// Change handler specific for 'group' fields
+// If the chosen third level item has children => show fourth field
+// If the chosen third level item has no children => go on to form output (not done yet)
+function onChangeHandlerGroup(event) {
+  hideCategoryField();
+  const chosenItem = contentTable.find(item => item.category_code===event.target.value);
+  const children = contentTable.find(item => item.parent_code===chosenItem.category_code);
+  if(children) {
+    showCategoryField();
+    const bindedChangeHandler = onChangeHandler.bind(this);
+    bindedChangeHandler(event);
+    fourthElementExists = true;
+  } else {
+    fourthElementExists = false;
+  }
+}
 
 // ii. function executions
 
@@ -88,22 +104,7 @@ const skuData = {
 // This will be used in the sku section
 let fourthElementExists = true;
 
-// Change handler specific for 'group' fields
-// If the chosen third level item has children => show fourth field
-// If the chosen third level item has no children => go on to form output (not done yet)
-function onChangeHandlerGroup(event) {
-  hideCategoryField();
-  const chosenItem = contentTable.find(item => item.category_code===event.target.value);
-  const children = contentTable.find(item => item.parent_code===chosenItem.category_code);
-  if(children) {
-    showCategoryField();
-    const bindedChangeHandler = onChangeHandler.bind(this);
-    bindedChangeHandler(event);
-    fourthElementExists = true;
-  } else {
-    fourthElementExists = false;
-  }
-}
+
 
 mainFamilyField.addEventListener('change', onChangeHandler);
 subFamilyField.addEventListener('change', onChangeHandler);
@@ -141,6 +142,7 @@ groupField.addEventListener('change', event => {
 
 
 // Fetch data table
+
 const url = 'https://cpq.binet.co.il/api/cpq/sku/all';
 
 class Item {
@@ -159,7 +161,7 @@ let contentTable = [];
 function flattenArray(array) {
   for (let i = 0; i < array.length; i++) {
     contentTable.push(array[i]);
-    if(array[i].children){
+   if(array[i].children){
       flattenArray(array[i].children);
     }
   }
@@ -174,13 +176,73 @@ function convertArray(array) {
   return result;
 }
 
+const leftContainer = document.getElementById('left-container');
+
+// This will create a (nested) unordered list to later be converted to a tree
+function createHtmlTable(array, destination){
+  const rootElement = document.createElement('ul');
+  for(const item of array){
+    const newNode = document.createElement('li');
+    newNode.innerText = item.label;
+    newNode.setAttribute('id', item.id);
+    if(item.children){
+      createHtmlTable(item.children, newNode);
+    }
+    rootElement.appendChild(newNode);
+  }
+  destination.appendChild(rootElement);
+}
+
 let promise = fetch(url);
 
 promise.then(data => {
   return data.json();
 }).then(table => {
+  // Remove 'loading table' message from left container
+  leftContainer.innerText = '';
+  // Create html table from fetched data and append it to the left container div
+  createHtmlTable(table, leftContainer);
+
+  // Create flat contentTable and convert it to be an array of Item objects
   flattenArray(table);
   contentTable = convertArray(contentTable);
-  // Start by showing all options in the "משפחה ראשית" field
+  // Start right container by showing all options in the "משפחה ראשית" field
   addOptions(0, document.getElementById('main-family'));
+
+  // Create tree from the html table we created earlier
+  $(function() {$('#left-container').jstree();});
+
+  // Whenever we click on a tree node:
+  // 1. If the node has children, do nothing.
+  // 2. If the node has no children we form the output:
+  // a) Second sku is the sku corresponding to the chosen node
+  // b) First sku  - either the sku of the parent node or (if parent node has no sku) sku of the grandparent node
+  // c) Derive the instruction and example values corresponding to chosen item and output the result
+  $('#left-container').on('changed.jstree', function(e, data){
+    if(!(data.node.children.length===0)){
+      return;
+    }
+      const chosenItem = contentTable.find(item => {
+        return item.category_code === data.node.id;
+      });
+      skuData.sku2 = chosenItem.sku;
+      const parentNode = contentTable.find(item => {
+        return item.category_code === chosenItem.parent_code;
+      });
+      if(parentNode.sku){
+        skuData.sku1 = parentNode.sku;
+      }else{
+        const grandparentNode = contentTable.find(item => {
+          return item.category_code === parentNode.parent_code;
+        });
+        skuData.sku1 = grandparentNode.sku;
+      }
+      showOutput(chosenItem.instruction, chosenItem.example);
+  });
 });
+
+
+
+
+
+
